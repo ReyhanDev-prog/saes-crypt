@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S-AES Simulator — Kriptografi</title>
+<style>
+:root {
+  --bg:        #0d1117;
+  --bg2:       #161b22;
+  --bg3:       #1c2331;
+  --border:    #30363d;
+  --accent:    #58a6ff;
+  --green:     #3fb950;
+  --text:      #e6edf3;
+  --muted:     #8b949e;
+  --bin:       #f0883e;
+  --hex:       #79c0ff;
+  --cell:      #21262d;
+  --danger:    #f85149;
+  --warn:      #d29922;
+  --r:         8px;
+  --mono:      'Courier New', Courier, monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent)}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#0d1117,#161b22);border-bottom:1px solid var(--border);padding:2rem 1rem;text-align:center}
+header h1{font-size:2rem;font-weight:700;color:var(--accent);letter-spacing:-0.5px}
+header p{color:var(--muted);margin-top:.4rem;font-size:.9rem}
+.badges{margin-top:.75rem;display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem}
+.badge{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:2px 12px;font-size:.75rem;color:var(--muted)}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:1.5rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1.5rem}
+.card-title{font-size:.95rem;font-weight:600;color:var(--accent);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;cursor:pointer;user-select:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+
+/* FORM */
+.fg label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.fg input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:1.1rem;padding:.7rem 1rem;letter-spacing:.12em;transition:border-color .2s}
+.fg input:focus{outline:none;border-color:var(--accent)}
+.fg input.err{border-color:var(--danger)}
+.fg .hint{font-size:.72rem;color:var(--muted);margin-top:.25rem}
+.mode-row{display:flex;gap:.6rem;margin:1rem 0}
+.mode-btn{flex:1;padding:.7rem;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--muted);cursor:pointer;font-size:.9rem;transition:all .2s;text-align:center}
+.mode-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(88,166,255,.1)}
+.btn-row{display:flex;gap:.6rem;margin-top:1rem}
+.btn{padding:.7rem 1.5rem;border-radius:6px;border:none;cursor:pointer;font-weight:600;font-size:.9rem;transition:opacity .2s}
+.btn-p{background:var(--accent);color:#0d1117}.btn-p:hover{opacity:.85}
+.btn-s{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-s:hover{border-color:var(--text);color:var(--text)}
+.err-msg{color:var(--danger);font-size:.8rem;margin-top:.4rem;display:none}
+
+/* RESULT */
+#result-panel{display:none}
+.result-big{font-family:var(--mono);font-size:1.35rem;color:var(--green);letter-spacing:.18em;text-align:center;padding:1rem;background:var(--bg3);border-radius:6px;margin:.4rem 0;word-break:break-all}
+.result-sub{font-family:var(--mono);color:var(--hex);font-size:.9rem;text-align:center;margin-top:.2rem}
+.result-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;text-align:center}
+
+/* MATRIX */
+.mat-container{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.5rem 0}
+.mat-wrap{text-align:center}
+.mat-title{font-size:.68rem;color:var(--muted);margin-bottom:.2rem;text-transform:uppercase;letter-spacing:.04em}
+.mat{display:inline-grid;grid-template-columns:1fr 1fr;gap:2px;background:#444c56;border:1px solid #444c56;border-radius:4px;padding:2px}
+.mc{background:var(--cell);padding:6px 10px;min-width:52px;text-align:center}
+.mc .nh{font-family:var(--mono);font-size:.88rem;color:var(--hex);font-weight:bold}
+.mc .nb{font-family:var(--mono);font-size:.62rem;color:var(--bin);display:block;margin-top:1px}
+.xor-sym{background:var(--bg3);border:1px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:bold;font-size:.9rem;flex-shrink:0;align-self:center}
+.arr{color:var(--accent);font-size:1.4rem;align-self:center;opacity:.7}
+.key-chip{background:var(--bg3);border:1px dashed var(--warn);border-radius:4px;padding:3px 8px;font-family:var(--mono);font-size:.72rem;color:var(--warn)}
+
+/* STEP SECTIONS */
+.step-sec{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:.6rem}
+.step-hdr{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:var(--bg3);cursor:pointer;user-select:none;transition:background .2s}
+.step-hdr:hover{background:rgba(88,166,255,.05)}
+.step-ttl{font-weight:600;font-size:.88rem}
+.step-tag{font-size:.68rem;padding:1px 8px;border-radius:20px;background:rgba(88,166,255,.12);color:var(--accent);border:1px solid rgba(88,166,255,.25)}
+.step-body{padding:1rem;display:none}
+.step-body.open{display:block}
+.chev{color:var(--muted);font-size:.8rem;transition:transform .2s}
+.chev.open{transform:rotate(180deg)}
+
+/* TABLES */
+.rtable{width:100%;border-collapse:collapse;font-size:.78rem;font-family:var(--mono)}
+.rtable th,.rtable td{border:1px solid var(--border);padding:4px 6px;text-align:center}
+.rtable th{background:var(--bg3);color:var(--muted)}
+.rtable td{color:var(--hex)}
+.rtable tr:hover td{background:rgba(88,166,255,.05)}
+
+/* KE steps */
+.kstep{font-family:var(--mono);font-size:.8rem;padding:.45rem 0;border-bottom:1px solid rgba(48,54,61,.5);color:var(--text);line-height:1.7}
+.kstep:last-child{border-bottom:none}
+.lbl{color:var(--muted)} .b{color:var(--bin)} .h{color:var(--hex)} .g{color:var(--green)} .o{color:var(--warn)} .ac{color:var(--accent)}
+
+/* SubNibbles table */
+.snt{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.83rem;margin-top:.5rem}
+.snt th{background:var(--bg3);color:var(--muted);font-size:.72rem;padding:4px 8px;border-bottom:1px solid var(--border);text-align:center}
+.snt td{padding:4px 8px;border-bottom:1px solid rgba(48,54,61,.4);text-align:center}
+.snt td:nth-child(2){color:var(--hex)} .snt td:nth-child(3){color:var(--bin)}
+.snt td:nth-child(5){color:var(--hex)} .snt td:nth-child(6){color:var(--bin)}
+.snt .arr-td{color:var(--muted)}
+
+/* MC detail */
+.mc-detail{font-family:var(--mono);font-size:.78rem;background:var(--bg3);border-radius:4px;padding:.75rem;line-height:1.9}
+.mc-detail .var{color:var(--muted)} .mc-detail .vh{color:var(--hex)} .mc-detail .vg{color:var(--green);font-weight:bold}
+
+/* Subkeys */
+.subkeys{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.75rem}
+.sk-box{flex:1;min-width:100px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.6rem;text-align:center}
+.sk-name{font-size:.7rem;color:var(--muted);margin-bottom:.2rem}
+.sk-hex{font-family:var(--mono);font-size:.9rem;color:var(--hex);font-weight:bold}
+.sk-bin{font-family:var(--mono);font-size:.72rem;color:var(--bin);margin-top:.1rem}
+
+/* Misc */
+.sec-lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.4rem}
+#ref-body{display:none}
+#ref-body.open{display:block}
+#steps-panel{display:none}
+#steps-panel.vis{display:block}
+.sep{border:none;border-top:1px solid var(--border);margin:.6rem 0}
+
+footer{text-align:center;padding:1.5rem;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border);margin-top:1rem}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚙ S-AES Simulator</h1>
+  <p>Simplified Advanced Encryption Standard — Simulator Interaktif</p>
+  <div class="badges">
+    <span class="badge">16-bit Block</span>
+    <span class="badge">16-bit Key</span>
+    <span class="badge">2 Rounds</span>
+    <span class="badge">GF(2⁴) dengan x⁴+x+1</span>
+    <span class="badge">Step-by-Step</span>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- INPUT CARD -->
+<div class="card">
+  <div class="card-title">🔑 Input Plaintext / Kunci</div>
+  <div class="grid2">
+    <div class="fg">
+      <label>Plaintext / Ciphertext (16-bit biner)</label>
+      <input type="text" id="pt-in" placeholder="0110111101101011" maxlength="16" autocomplete="off">
+      <div class="hint">Masukkan tepat 16 karakter biner (0 atau 1)</div>
+    </div>
+    <div class="fg">
+      <label>Kunci / Key (16-bit biner)</label>
+      <input type="text" id="key-in" placeholder="1010011100111011" maxlength="16" autocomplete="off">
+      <div class="hint">Masukkan tepat 16 karakter biner (0 atau 1)</div>
+    </div>
+  </div>
+  <div id="err-msg" class="err-msg">⚠ Input harus tepat 16 karakter biner (hanya 0 dan 1).</div>
+  <div style="margin-top:1rem">
+    <div class="sec-lbl">Mode Operasi</div>
+    <div class="mode-row">
+      <button class="mode-btn active" id="btn-enc" onclick="setMode('enc')">🔒 Enkripsi</button>
+      <button class="mode-btn" id="btn-dec" onclick="setMode('dec')">🔓 Dekripsi</button>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-p" onclick="run()">▶ PROSES</button>
+    <button class="btn btn-s" onclick="reset()">↺ RESET</button>
+  </div>
+</div>
+
+<!-- REFERENCE TABLES -->
+<div class="card">
+  <div class="card-title" onclick="toggleRef()">
+    📋 Tabel Referensi S-AES
+    <span id="ref-chev" class="chev" style="margin-left:auto">▼</span>
+  </div>
+  <div id="ref-body">
+    <div class="grid2">
+      <div>
+        <div class="sec-lbl">S-Box — SubNibble</div>
+        <table class="rtable">
+          <tr><th>In (hex)</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+          <tr><th>Out (hex)</th><td>9</td><td>4</td><td>A</td><td>B</td><td>D</td><td>1</td><td>8</td><td>5</td><td>6</td><td>2</td><td>0</td><td>3</td><td>C</td><td>E</td><td>F</td><td>7</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="sec-lbl">Inverse S-Box — InvSubNibble</div>
+        <table class="rtable">
+          <tr><th>In (hex)</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+          <tr><th>Out (hex)</th><td>A</td><td>5</td><td>9</td><td>B</td><td>1</td><td>7</td><td>8</td><td>F</td><td>6</td><td>0</td><td>2</td><td>3</td><td>C</td><td>4</td><td>D</td><td>E</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:1rem">
+      <div>
+        <div class="sec-lbl">Matriks MixColumns &amp; Inversnya</div>
+        <div style="font-family:var(--mono);font-size:.85rem;background:var(--bg3);padding:.75rem;border-radius:4px;line-height:2">
+          M =&nbsp;<span style="color:var(--hex)">| 1&nbsp;&nbsp;4 |</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--hex)">| 4&nbsp;&nbsp;1 |</span><br>
+          <span style="color:var(--muted);font-size:.72rem">M⁻¹ =&nbsp;</span><span style="color:var(--bin)">| 9&nbsp;&nbsp;2 |</span><br>
+          <span style="color:var(--muted);font-size:.72rem">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color:var(--bin)">| 2&nbsp;&nbsp;9 |</span><br>
+          <span style="color:var(--muted);font-size:.7rem">Perkalian di GF(2⁴), poly: x⁴+x+1 (0x13)</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec-lbl">Konstanta RCON</div>
+        <div style="font-family:var(--mono);font-size:.85rem;background:var(--bg3);padding:.75rem;border-radius:4px;line-height:2">
+          RCON1 = <span style="color:var(--hex)">0x80</span> = <span style="color:var(--bin)">1000 0000</span><br>
+          RCON2 = <span style="color:var(--hex)">0x30</span> = <span style="color:var(--bin)">0011 0000</span><br>
+          <span style="color:var(--muted);font-size:.7rem">GF(2⁴) irreducible: x⁴+x+1 = <span style="color:var(--hex)">0x13</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT PANEL -->
+<div id="result-panel" class="card">
+  <div class="card-title" id="result-title">✅ Hasil</div>
+  <div id="result-content"></div>
+</div>
+
+<!-- STEPS PANEL -->
+<div id="steps-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <div style="font-size:.95rem;font-weight:600;color:var(--accent)">📊 Detail Langkah Perhitungan</div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-s" style="font-size:.78rem;padding:.35rem .7rem" onclick="toggleAll(true)">Buka Semua</button>
+      <button class="btn btn-s" style="font-size:.78rem;padding:.35rem .7rem" onclick="toggleAll(false)">Tutup Semua</button>
+    </div>
+  </div>
+  <div id="steps-content"></div>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  S-AES Simulator · Mata Kuliah Kriptografi · Tugas Individu<br>
+  Referensi: Stallings (2017) &amp; Schaefer-Waidner (1998)
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  KONSTANTA S-AES
+// ═══════════════════════════════════════════════════
+const SBOX     = [9,4,0xA,0xB,0xD,1,8,5,6,2,0,3,0xC,0xE,0xF,7];
+const INV_SBOX = [0xA,5,9,0xB,1,7,8,0xF,6,0,2,3,0xC,4,0xD,0xE];
+const MIXCOL     = [[1,4],[4,1]];
+const INV_MIXCOL = [[9,2],[2,9]];
+const RCON1 = 0x80, RCON2 = 0x30;
+
+// ═══════════════════════════════════════════════════
+//  OPERASI GF(2^4) — irredusibel x^4+x+1
+// ═══════════════════════════════════════════════════
+function gfMul(a, b) {
+  let r = 0;
+  for (let i = 0; i < 4; i++) {
+    if (b & 1) r ^= a;
+    const hb = a & 0x8;
+    a = (a << 1) & 0xF;
+    if (hb) a ^= 0x3; // reduce: x^4 = x+1 → XOR lower bits of 0x13
+    b >>= 1;
+  }
+  return r;
+}
+
+// ═══════════════════════════════════════════════════
+//  KEY EXPANSION
+// ═══════════════════════════════════════════════════
+function rotWord(w)  { return ((w & 0xF) << 4) | ((w >> 4) & 0xF); }
+function subWord(w)  { return (SBOX[(w>>4)&0xF] << 4) | SBOX[w&0xF]; }
+
+function expandKey(key) {
+  const w0 = (key >> 8) & 0xFF;
+  const w1 = key & 0xFF;
+  const rw1 = rotWord(w1), sw1 = subWord(rw1);
+  const w2 = w0 ^ sw1 ^ RCON1;
+  const w3 = w2 ^ w1;
+  const rw3 = rotWord(w3), sw3 = subWord(rw3);
+  const w4 = w2 ^ sw3 ^ RCON2;
+  const w5 = w4 ^ w3;
+  return {
+    words: [w0,w1,w2,w3,w4,w5],
+    keys:  [(w0<<8)|w1, (w2<<8)|w3, (w4<<8)|w5],
+    mid:   { rw1, sw1, rw3, sw3 }
+  };
+}
+
+// ═══════════════════════════════════════════════════
+//  STATE MATRIX HELPERS
+//  State [row][col]: [0][0]=bits15-12, [1][0]=bits11-8
+//                    [0][1]=bits7-4,   [1][1]=bits3-0
+// ═══════════════════════════════════════════════════
+const ptToState = pt => [[(pt>>12)&0xF,(pt>>4)&0xF],[(pt>>8)&0xF,pt&0xF]];
+const stateToPt = s  => (s[0][0]<<12)|(s[1][0]<<8)|(s[0][1]<<4)|s[1][1];
+const copyState = s  => [[s[0][0],s[0][1]],[s[1][0],s[1][1]]];
+
+function ark(state, k) {
+  const ks = ptToState(k);
+  return [[state[0][0]^ks[0][0],state[0][1]^ks[0][1]],[state[1][0]^ks[1][0],state[1][1]^ks[1][1]]];
+}
+function subNibs(state, inv) {
+  const bx = inv ? INV_SBOX : SBOX;
+  return [[bx[state[0][0]],bx[state[0][1]]],[bx[state[1][0]],bx[state[1][1]]]];
+}
+function shiftRows(state) {
+  // Row 0 unchanged; Row 1 digeser kiri 1 nibble (swap)
+  return [[state[0][0],state[0][1]],[state[1][1],state[1][0]]];
+}
+function mixColumns(state, mat) {
+  const [[m00,m01],[m10,m11]] = mat;
+  return [
+    [gfMul(m00,state[0][0])^gfMul(m01,state[1][0]), gfMul(m00,state[0][1])^gfMul(m01,state[1][1])],
+    [gfMul(m10,state[0][0])^gfMul(m11,state[1][0]), gfMul(m10,state[0][1])^gfMul(m11,state[1][1])]
+  ];
+}
+
+// ═══════════════════════════════════════════════════
+//  ENKRIPSI (dengan logging)
+// ═══════════════════════════════════════════════════
+function encrypt(pt, key) {
+  const ke = expandKey(key);
+  const [K0,K1,K2] = ke.keys;
+  const log = { ke, mode:'enc' };
+  let s = ptToState(pt); log.init = copyState(s);
+
+  // Initial AddRoundKey
+  let b = copyState(s); s = ark(s,K0); log.ark0 = {before:b,key:K0,after:copyState(s)};
+
+  // Round 1 — SubNibbles
+  b=copyState(s); s=subNibs(s,false); log.r1sn={before:b,after:copyState(s)};
+  // Round 1 — ShiftRows
+  b=copyState(s); s=shiftRows(s); log.r1sr={before:b,after:copyState(s)};
+  // Round 1 — MixColumns
+  b=copyState(s); s=mixColumns(s,MIXCOL); log.r1mc={before:b,after:copyState(s),mat:MIXCOL};
+  // Round 1 — AddRoundKey K1
+  b=copyState(s); s=ark(s,K1); log.r1ark={before:b,key:K1,after:copyState(s)};
+
+  // Round 2 — SubNibbles
+  b=copyState(s); s=subNibs(s,false); log.r2sn={before:b,after:copyState(s)};
+  // Round 2 — ShiftRows
+  b=copyState(s); s=shiftRows(s); log.r2sr={before:b,after:copyState(s)};
+  // Round 2 — AddRoundKey K2 (no MixColumns)
+  b=copyState(s); s=ark(s,K2); log.r2ark={before:b,key:K2,after:copyState(s)};
+
+  log.output = stateToPt(s);
+  return log;
+}
+
+// ═══════════════════════════════════════════════════
+//  DEKRIPSI (dengan logging)
+//  Urutan: ARK(K2) → InvSR → InvSN → ARK(K1) → InvMC
+//          → InvSR → InvSN → ARK(K0)
+// ═══════════════════════════════════════════════════
+function decrypt(ct, key) {
+  const ke = expandKey(key);
+  const [K0,K1,K2] = ke.keys;
+  const log = { ke, mode:'dec' };
+  let s = ptToState(ct); log.init = copyState(s);
+
+  // Initial AddRoundKey K2
+  let b=copyState(s); s=ark(s,K2); log.ark0={before:b,key:K2,after:copyState(s)};
+
+  // Inverse Round 1
+  b=copyState(s); s=shiftRows(s);      log.r1sr ={before:b,after:copyState(s)};
+  b=copyState(s); s=subNibs(s,true);   log.r1sn ={before:b,after:copyState(s)};
+  b=copyState(s); s=ark(s,K1);         log.r1ark={before:b,key:K1,after:copyState(s)};
+  b=copyState(s); s=mixColumns(s,INV_MIXCOL); log.r1mc={before:b,after:copyState(s),mat:INV_MIXCOL};
+
+  // Inverse Round 2
+  b=copyState(s); s=shiftRows(s);      log.r2sr ={before:b,after:copyState(s)};
+  b=copyState(s); s=subNibs(s,true);   log.r2sn ={before:b,after:copyState(s)};
+  b=copyState(s); s=ark(s,K0);         log.r2ark={before:b,key:K0,after:copyState(s)};
+
+  log.output = stateToPt(s);
+  return log;
+}
+
+// ═══════════════════════════════════════════════════
+//  FORMAT HELPERS
+// ═══════════════════════════════════════════════════
+const nB  = n => n.toString(2).padStart(4,'0');
+const bB  = n => n.toString(2).padStart(8,'0');
+const wB  = n => n.toString(2).padStart(16,'0');
+const nH  = n => n.toString(16).toUpperCase();
+const bH  = n => n.toString(16).toUpperCase().padStart(2,'0');
+const wH  = n => n.toString(16).toUpperCase().padStart(4,'0');
+const fmt16 = n => { const b=wB(n); return b.slice(0,4)+' '+b.slice(4,8)+' '+b.slice(8,12)+' '+b.slice(12); };
+const fmt8  = n => { const b=bB(n); return b.slice(0,4)+' '+b.slice(4); };
+
+// ═══════════════════════════════════════════════════
+//  RENDER HELPERS — HTML
+// ═══════════════════════════════════════════════════
+function renderMat(state, title='') {
+  const cell = (r,c) =>
+    `<div class="mc"><span class="nh">${nH(state[r][c])}</span><span class="nb">${nB(state[r][c])}</span></div>`;
+  return `<div class="mat-wrap">
+    ${title?`<div class="mat-title">${title}</div>`:''}
+    <div class="mat">${cell(0,0)}${cell(0,1)}${cell(1,0)}${cell(1,1)}</div>
+  </div>`;
+}
+
+function renderArkContent(log) {
+  return `<div class="mat-container">
+    ${renderMat(log.before,'State Masuk')}
+    <div class="xor-sym">⊕</div>
+    ${renderMat(ptToState(log.key),`K = 0x${wH(log.key)}`)}
+    <span class="arr">→</span>
+    ${renderMat(log.after,'State Keluar')}
+  </div>
+  <div style="font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-top:.4rem">
+    Subkunci: <span style="color:var(--hex)">0x${wH(log.key)}</span>
+    = <span style="color:var(--bin)">${fmt16(log.key)}</span>
+  </div>`;
+}
+
+function renderSnContent(log, inv) {
+  const pos = [[0,0,'s₀₀'],[0,1,'s₀₁'],[1,0,'s₁₀'],[1,1,'s₁₁']];
+  const rows = pos.map(([r,c,lbl]) => {
+    const a=log.before[r][c], b=log.after[r][c];
+    return `<tr><td style="color:var(--muted)">${lbl}</td>
+      <td>${nH(a)}</td><td>${nB(a)}</td>
+      <td class="arr-td">→</td>
+      <td>${nH(b)}</td><td>${nB(b)}</td></tr>`;
+  }).join('');
+  return `<div class="mat-container">
+    ${renderMat(log.before,'Sebelum')}
+    <span class="arr">→</span>
+    ${renderMat(log.after,'Sesudah')}
+  </div>
+  <div style="margin-top:.75rem">
+    <div class="sec-lbl">${inv?'Inverse ':''} Substitusi per Nibble</div>
+    <table class="snt">
+      <tr><th>Posisi</th><th>Input(Hex)</th><th>Input(Bin)</th><th></th><th>Output(Hex)</th><th>Output(Bin)</th></tr>
+      ${rows}
+    </table>
+  </div>`;
+}
+
+function renderSrContent(log) {
+  return `<div class="mat-container">
+    ${renderMat(log.before,'Sebelum')}
+    <span class="arr">→</span>
+    ${renderMat(log.after,'Sesudah')}
+  </div>
+  <div style="font-size:.78rem;color:var(--muted);margin-top:.5rem">
+    Baris 0 tidak berubah &nbsp;·&nbsp; Baris 1 digeser kiri 1 nibble (swap: s₁₀ ↔ s₁₁)
+  </div>`;
+}
+
+function renderMcLine(name, v0, m0, v1, m1, res) {
+  const p0 = gfMul(m0,v0), p1 = gfMul(m1,v1);
+  return `<div>
+    <span class="var">${name}</span> =
+    GFMul(<span class="vh">${nH(m0)}</span>,<span class="vh">${nH(v0)}</span>)
+    ⊕ GFMul(<span class="vh">${nH(m1)}</span>,<span class="vh">${nH(v1)}</span>)
+    = <span class="vh">${nH(p0)}</span> ⊕ <span class="vh">${nH(p1)}</span>
+    = <span class="vg">${nH(res)}</span>
+    <span style="color:var(--muted);font-size:.7rem"> [${nB(p0)} ⊕ ${nB(p1)} = ${nB(res)}]</span>
+  </div>`;
+}
+
+function renderMcContent(log) {
+  const s = log.before, a = log.after;
+  const [[m00,m01],[m10,m11]] = log.mat;
+  const isInv = log.mat === INV_MIXCOL || (log.mat[0][0]===9);
+  return `<div class="mat-container">
+    ${renderMat(s,'Sebelum')}
+    <span class="arr">→</span>
+    ${renderMat(a,'Sesudah')}
+  </div>
+  <div style="margin-top:.75rem">
+    <div class="sec-lbl">Detail Perhitungan GF(2⁴) — ${isInv?'InvMixColumns [[9,2],[2,9]]':'MixColumns [[1,4],[4,1]]'}</div>
+    <div class="mc-detail">
+      <div style="color:var(--muted);font-size:.7rem;margin-bottom:.3rem">▸ Kolom 0: [${nH(s[0][0])}, ${nH(s[1][0])}]</div>
+      ${renderMcLine("s'₀₀", s[0][0],m00, s[1][0],m01, a[0][0])}
+      ${renderMcLine("s'₁₀", s[0][0],m10, s[1][0],m11, a[1][0])}
+      <div style="color:var(--muted);font-size:.7rem;margin:.4rem 0 .2rem">▸ Kolom 1: [${nH(s[0][1])}, ${nH(s[1][1])}]</div>
+      ${renderMcLine("s'₀₁", s[0][1],m00, s[1][1],m01, a[0][1])}
+      ${renderMcLine("s'₁₁", s[0][1],m10, s[1][1],m11, a[1][1])}
+    </div>
+  </div>`;
+}
+
+function renderKeContent(ke) {
+  const w=ke.words, {rw1,sw1,rw3,sw3}=ke.mid, [K0,K1,K2]=ke.keys;
+  return `
+  <div class="kstep"><span class="lbl">Kunci Awal (key) :</span>
+    <span class="b">${fmt16((w[0]<<8)|w[1])}</span> = <span class="h">0x${wH((w[0]<<8)|w[1])}</span></div>
+  <div class="kstep"><span class="lbl">w0 (byte tinggi) :</span>
+    <span class="b">${fmt8(w[0])}</span> = <span class="h">0x${bH(w[0])}</span></div>
+  <div class="kstep"><span class="lbl">w1 (byte rendah) :</span>
+    <span class="b">${fmt8(w[1])}</span> = <span class="h">0x${bH(w[1])}</span></div>
+
+  <hr class="sep">
+  <div class="kstep" style="color:var(--accent)">— Pembangkitan K1 (w2, w3) —</div>
+  <div class="kstep"><span class="lbl">RotWord(w1)           :</span>
+    swap nibble → <span class="b">${fmt8(rw1)}</span> = <span class="h">0x${bH(rw1)}</span></div>
+  <div class="kstep"><span class="lbl">SubWord(RotWord(w1))  :</span>
+    S-Box per nibble → <span class="b">${fmt8(sw1)}</span> = <span class="h">0x${bH(sw1)}</span></div>
+  <div class="kstep"><span class="lbl">w2 = w0 ⊕ SwRw1 ⊕ RCON1 :</span><br>
+    &nbsp;&nbsp;&nbsp; = <span class="b">${fmt8(w[0])}</span>
+    ⊕ <span class="b">${fmt8(sw1)}</span>
+    ⊕ <span class="o">${fmt8(RCON1)}</span>
+    = <span class="g">${fmt8(w[2])}</span> = <span class="h">0x${bH(w[2])}</span></div>
+  <div class="kstep"><span class="lbl">w3 = w2 ⊕ w1          :</span>
+    <span class="b">${fmt8(w[2])}</span> ⊕ <span class="b">${fmt8(w[1])}</span>
+    = <span class="g">${fmt8(w[3])}</span> = <span class="h">0x${bH(w[3])}</span></div>
+
+  <hr class="sep">
+  <div class="kstep" style="color:var(--accent)">— Pembangkitan K2 (w4, w5) —</div>
+  <div class="kstep"><span class="lbl">RotWord(w3)           :</span>
+    swap nibble → <span class="b">${fmt8(rw3)}</span> = <span class="h">0x${bH(rw3)}</span></div>
+  <div class="kstep"><span class="lbl">SubWord(RotWord(w3))  :</span>
+    S-Box per nibble → <span class="b">${fmt8(sw3)}</span> = <span class="h">0x${bH(sw3)}</span></div>
+  <div class="kstep"><span class="lbl">w4 = w2 ⊕ SwRw3 ⊕ RCON2 :</span><br>
+    &nbsp;&nbsp;&nbsp; = <span class="b">${fmt8(w[2])}</span>
+    ⊕ <span class="b">${fmt8(sw3)}</span>
+    ⊕ <span class="o">${fmt8(RCON2)}</span>
+    = <span class="g">${fmt8(w[4])}</span> = <span class="h">0x${bH(w[4])}</span></div>
+  <div class="kstep"><span class="lbl">w5 = w4 ⊕ w3          :</span>
+    <span class="b">${fmt8(w[4])}</span> ⊕ <span class="b">${fmt8(w[3])}</span>
+    = <span class="g">${fmt8(w[5])}</span> = <span class="h">0x${bH(w[5])}</span></div>
+
+  <div style="margin-top:.75rem">
+    <div class="sec-lbl">Subkunci yang Dihasilkan</div>
+    <div class="subkeys">
+      <div class="sk-box"><div class="sk-name">K0 = w0 ‖ w1</div>
+        <div class="sk-hex">0x${wH(K0)}</div><div class="sk-bin">${fmt16(K0)}</div></div>
+      <div class="sk-box"><div class="sk-name">K1 = w2 ‖ w3</div>
+        <div class="sk-hex">0x${wH(K1)}</div><div class="sk-bin">${fmt16(K1)}</div></div>
+      <div class="sk-box"><div class="sk-name">K2 = w4 ‖ w5</div>
+        <div class="sk-hex">0x${wH(K2)}</div><div class="sk-bin">${fmt16(K2)}</div></div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  STEP SECTION BUILDER
+// ═══════════════════════════════════════════════════
+let stepCounter = 0;
+function makeStep(tag, title, body) {
+  const id = 's' + (++stepCounter);
+  return `<div class="step-sec">
+    <div class="step-hdr" onclick="toggleStep('${id}')">
+      <span class="step-ttl">${title}</span>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span class="step-tag">${tag}</span>
+        <span class="chev" id="c${id}">▼</span>
+      </div>
+    </div>
+    <div class="step-body" id="b${id}">${body}</div>
+  </div>`;
+}
+
+function buildSteps(log) {
+  stepCounter = 0;
+  const isEnc = log.mode === 'enc';
+  const [K0,K1,K2] = log.ke.keys;
+  let h = '';
+
+  // Key Expansion
+  h += makeStep('Key Expansion', '🔑 Key Expansion — Pembangkitan Subkunci K0, K1, K2', renderKeContent(log.ke));
+
+  // Initial State
+  const initPt = stateToPt(log.init);
+  h += makeStep(isEnc?'Input':'Input',
+    `📋 State Matriks Awal (${isEnc?'Plaintext':'Ciphertext'}: 0x${wH(initPt)})`,
+    `<div class="kstep"><span class="lbl">${isEnc?'Plaintext':'Ciphertext'} :</span>
+      <span class="b">${fmt16(initPt)}</span> = <span class="h">0x${wH(initPt)}</span></div>
+    ${renderMat(log.init,'State Matriks')}`);
+
+  // Initial ARK
+  const arkKey = isEnc ? K0 : K2;
+  const arkLabel = isEnc ? `K0 (0x${wH(K0)})` : `K2 (0x${wH(K2)})`;
+  h += makeStep('AddRoundKey', `🔐 Initial AddRoundKey ⊕ ${arkLabel}`, renderArkContent(log.ark0));
+
+  if (isEnc) {
+    h += makeStep('Round 1','🔄 Round 1 — SubNibbles (S-Box substitusi tiap nibble)',renderSnContent(log.r1sn,false));
+    h += makeStep('Round 1','🔄 Round 1 — ShiftRows (geser baris ke-2 sebesar 1 nibble)',renderSrContent(log.r1sr));
+    h += makeStep('Round 1','🔄 Round 1 — MixColumns (perkalian matriks di GF(2⁴))',renderMcContent(log.r1mc));
+    h += makeStep('Round 1',`🔐 Round 1 — AddRoundKey ⊕ K1 (0x${wH(K1)})`,renderArkContent(log.r1ark));
+    h += makeStep('Round 2','🔄 Round 2 — SubNibbles',renderSnContent(log.r2sn,false));
+    h += makeStep('Round 2','🔄 Round 2 — ShiftRows',renderSrContent(log.r2sr));
+    h += makeStep('Round 2',`🔐 Round 2 — AddRoundKey ⊕ K2 (0x${wH(K2)}) — Final, tanpa MixColumns`,renderArkContent(log.r2ark));
+  } else {
+    h += makeStep('Inv.Round 1','🔄 Inv.Round 1 — InvShiftRows',renderSrContent(log.r1sr));
+    h += makeStep('Inv.Round 1','🔄 Inv.Round 1 — InvSubNibbles (Inverse S-Box)',renderSnContent(log.r1sn,true));
+    h += makeStep('Inv.Round 1',`🔐 Inv.Round 1 — AddRoundKey ⊕ K1 (0x${wH(K1)})`,renderArkContent(log.r1ark));
+    h += makeStep('Inv.Round 1','🔄 Inv.Round 1 — InvMixColumns (perkalian matriks inverse di GF(2⁴))',renderMcContent(log.r1mc));
+    h += makeStep('Inv.Round 2','🔄 Inv.Round 2 — InvShiftRows',renderSrContent(log.r2sr));
+    h += makeStep('Inv.Round 2','🔄 Inv.Round 2 — InvSubNibbles (Inverse S-Box)',renderSnContent(log.r2sn,true));
+    h += makeStep('Inv.Round 2',`🔐 Inv.Round 2 — AddRoundKey ⊕ K0 (0x${wH(K0)}) — Final`,renderArkContent(log.r2ark));
+  }
+  return h;
+}
+
+// ═══════════════════════════════════════════════════
+//  UI CONTROLS
+// ═══════════════════════════════════════════════════
+let mode = 'enc';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-enc').classList.toggle('active', m==='enc');
+  document.getElementById('btn-dec').classList.toggle('active', m==='dec');
+}
+
+function run() {
+  const ptVal  = document.getElementById('pt-in').value.trim();
+  const keyVal = document.getElementById('key-in').value.trim();
+  const valid  = s => /^[01]{16}$/.test(s);
+  const errEl  = document.getElementById('err-msg');
+
+  document.getElementById('pt-in').classList.toggle('err', !valid(ptVal));
+  document.getElementById('key-in').classList.toggle('err', !valid(keyVal));
+
+  if (!valid(ptVal)||!valid(keyVal)) { errEl.style.display='block'; return; }
+  errEl.style.display='none';
+
+  const ptNum  = parseInt(ptVal,2);
+  const keyNum = parseInt(keyVal,2);
+  const log    = mode==='enc' ? encrypt(ptNum,keyNum) : decrypt(ptNum,keyNum);
+
+  // Result panel
+  document.getElementById('result-panel').style.display='block';
+  const isEnc = mode==='enc';
+  document.getElementById('result-title').textContent = isEnc ? '✅ Hasil Enkripsi' : '✅ Hasil Dekripsi';
+  document.getElementById('result-content').innerHTML = `
+    <div class="grid2">
+      <div>
+        <div class="result-lbl">${isEnc?'Plaintext':'Ciphertext'} (Input)</div>
+        <div class="result-big" style="color:var(--muted);font-size:1rem">${fmt16(ptNum)}</div>
+        <div class="result-sub">0x${wH(ptNum)}</div>
+      </div>
+      <div>
+        <div class="result-lbl">${isEnc?'Ciphertext':'Plaintext'} (Output)</div>
+        <div class="result-big">${fmt16(log.output)}</div>
+        <div class="result-sub">0x${wH(log.output)}</div>
+      </div>
+    </div>`;
+
+  // Steps
+  document.getElementById('steps-panel').classList.add('vis');
+  document.getElementById('steps-content').innerHTML = buildSteps(log);
+
+  // Scroll ke hasil
+  document.getElementById('result-panel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function reset() {
+  document.getElementById('pt-in').value='';
+  document.getElementById('key-in').value='';
+  document.getElementById('err-msg').style.display='none';
+  document.getElementById('pt-in').classList.remove('err');
+  document.getElementById('key-in').classList.remove('err');
+  document.getElementById('result-panel').style.display='none';
+  document.getElementById('steps-panel').classList.remove('vis');
+  document.getElementById('steps-content').innerHTML='';
+}
+
+function toggleStep(id) {
+  const b=document.getElementById('b'+id);
+  const c=document.getElementById('c'+id);
+  const o=b.classList.toggle('open');
+  if(c){ c.classList.toggle('open',o); c.textContent=o?'▲':'▼'; }
+}
+
+function toggleAll(open) {
+  document.querySelectorAll('.step-body').forEach(b=>b.classList.toggle('open',open));
+  document.querySelectorAll('[id^="c"]').forEach(c=>{ c.classList.toggle('open',open); c.textContent=open?'▲':'▼'; });
+}
+
+function toggleRef() {
+  const b=document.getElementById('ref-body');
+  const c=document.getElementById('ref-chev');
+  const o=b.classList.toggle('open');
+  c.classList.toggle('open',o); c.textContent=o?'▲':'▼';
+}
+</script>
+</body>
+</html>
