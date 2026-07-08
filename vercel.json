@@ -1,0 +1,7 @@
+{
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/", "destination": "/saes-simulator.html" },
+    { "source": "/(.*)", "destination": "/saes-simulator.html" }
+  ]
+}
