@@ -9,7 +9,7 @@
 
 | | Link |
 |---|---|
-| 🌐 Aplikasi Web | [[URL .my.id — isi setelah deploy]](#) |
+| 🌐 Aplikasi Web | [https://saes.cryptograph.my.id/](#) |
 | 📹 Video YouTube | [[URL YouTube — isi setelah upload]](#) |
 | 📄 Laporan | Lihat file `Laporan_Project_SAES.docx` |
 
@@ -51,7 +51,7 @@ Aplikasi web simulasi **S-AES (Simplified Advanced Encryption Standard)** yang d
 ## 🚀 Cara Menggunakan
 
 ### Online
-Akses langsung di: **[URL .my.id]**
+Akses langsung di: **https://saes.cryptograph.my.id/**
 
 ### Lokal
 ```bash
